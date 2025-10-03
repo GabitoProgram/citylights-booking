@@ -99,6 +99,26 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     return reservas;
   }
 
+  // 📅 NUEVO MÉTODO: Obtener TODAS las reservas para visualización del calendario
+  async findAllForCalendar() {
+    console.log('📅 [Reserva Service] findAllForCalendar - Obteniendo TODAS las reservas para calendario');
+    
+    const reservas = await this.reserva.findMany({
+      // SIN filtro de usuario - todas las reservas
+      include: {
+        area: true,
+        confirmacion: true,
+        pagosReserva: true
+      }
+    });
+
+    console.log('📅 [Reserva Service] Total de reservas para calendario:', reservas.length);
+    console.log('📅 [Reserva Service] IDs encontradas:', reservas.map(r => r.id));
+    console.log('📅 [Reserva Service] Usuarios en reservas:', reservas.map(r => r.usuarioNombre || r.usuarioId));
+    
+    return reservas;
+  }
+
   findOne(id: number) {
     return this.reserva.findUnique({
       where: { id },

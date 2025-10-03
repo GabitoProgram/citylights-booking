@@ -98,6 +98,15 @@ export class ReservaController {
     return this.reservaService.findAll(user);
   }
 
+  // 📅 NUEVO ENDPOINT: Ruta HTTP GET para obtener TODAS las reservas para el calendario
+  @Get('calendar')
+  @UseGuards(JwtAuthGuard)
+  findAllForCalendarHttp(@GetUser() user: UserFromToken) {
+    console.log('📅 [Reserva Controller] findAllForCalendarHttp - Usuario:', user?.rol);
+    console.log('📅 [Reserva Controller] Obteniendo TODAS las reservas para visualización de calendario');
+    return this.reservaService.findAllForCalendar();
+  }
+
   // Ruta HTTP GET para buscar reserva por id
   @Get(':id')
   findOneHttp(@Param('id') id: number) {
