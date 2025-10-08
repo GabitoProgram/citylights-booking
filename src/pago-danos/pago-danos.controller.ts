@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Body, Param, UseGuards, Logger } from '@nestjs/common';
-import { PagoDanosService, CreatePagoDanosDto, UpdatePagoDanosDto } from './pago-danos.service';
+import { PagoDanosService } from './pago-danos.service';
+import type { CreatePagoDanosDto, UpdatePagoDanosDto } from './pago-danos.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/user.decorator';
 import type { UserFromToken } from '../auth/jwt-auth.guard';
