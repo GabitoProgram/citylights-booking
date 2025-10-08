@@ -82,7 +82,7 @@ export class StripeService {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reservas?payment=success&type=danos&id=${pagoDanosId}`,
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/damage-payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reservas?payment=cancelled&type=danos&id=${pagoDanosId}`,
         customer_email: customerEmail,
         metadata: {
