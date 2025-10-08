@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ReservaService } from './reserva.service';
 import { CreateReservaDto } from './dto/create-reserva.dto';
@@ -105,6 +105,23 @@ export class ReservaController {
     console.log('📅 [Reserva Controller] findAllForCalendarHttp - Usuario:', user?.rol);
     console.log('📅 [Reserva Controller] Obteniendo TODAS las reservas para visualización de calendario');
     return this.reservaService.findAllForCalendar();
+  }
+
+  // 📦 NUEVO ENDPOINT: Gestionar entrega de reserva
+  @Patch(':id/entrega')
+  @UseGuards(JwtAuthGuard)
+  async gestionarEntrega(
+    @Param('id') id: string,
+    @Body() entregaData: {
+      estadoEntrega: 'PENDIENTE' | 'ENTREGADO' | 'NO_APLICA';
+      costoEntrega?: number;
+      pagoEntrega?: boolean;
+      observacionesEntrega?: string;
+    },
+    @GetUser() user: UserFromToken
+  ) {
+    this.logger.log(`📦 [Entrega] Usuario ${user.nombre} gestionando entrega de reserva ${id}`);
+    return this.reservaService.gestionarEntrega(Number(id), entregaData, user);
   }
 
   // Ruta HTTP GET para buscar reserva por id

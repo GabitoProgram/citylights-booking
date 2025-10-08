@@ -45,6 +45,12 @@ enum EstadoFactura {
   ENVIADA
 }
 
+enum EstadoEntrega {
+  PENDIENTE
+  ENTREGADO
+  NO_APLICA
+}
+
 enum TipoTarjeta {
   VISA
   MASTERCARD
@@ -83,6 +89,14 @@ model Reserva {
   usuarioRol    String?     // Rol del usuario
   creadoEn      DateTime    @default(now())
   actualizadoEn DateTime    @updatedAt
+
+  // Campos de entrega y recepción
+  estadoEntrega    EstadoEntrega @default(PENDIENTE)
+  fechaEntrega     DateTime?     // Fecha de entrega/recepción
+  costoEntrega     Float?        // Costo adicional por entrega
+  pagoEntrega      Boolean       @default(false)   // Si ya pagó el costo de entrega
+  observacionesEntrega String?   // Observaciones de la entrega
+  usuarioEntrega   String?       // Usuario que procesó la entrega
 
   area          AreaComun   @relation(fields: [areaId], references: [id])
   confirmacion  Confirmacion?

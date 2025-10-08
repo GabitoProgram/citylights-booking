@@ -258,4 +258,55 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       }
     });
   }
+
+  // 📦 NUEVO MÉTODO: Gestionar entrega de reserva
+  async gestionarEntrega(
+    id: number, 
+    entregaData: {
+      estadoEntrega: 'PENDIENTE' | 'ENTREGADO' | 'NO_APLICA';
+      costoEntrega?: number;
+      pagoEntrega?: boolean;
+      observacionesEntrega?: string;
+    },
+    user: any
+  ) {
+    this.logger.log(`📦 [Entrega Service] Gestionando entrega para reserva ${id} por usuario ${user.nombre}`);
+    
+    // Verificar que la reserva existe
+    const reserva = await this.reserva.findUnique({
+      where: { id },
+      include: { area: true }
+    });
+
+    if (!reserva) {
+      throw new Error('Reserva no encontrada');
+    }
+
+    // Solo permitir a admins gestionar entrega
+    if (!['SUPER_USER', 'USER_ADMIN'].includes(user.rol)) {
+      throw new Error('No tienes permisos para gestionar entregas');
+    }
+
+    // Actualizar la reserva con datos de entrega
+    const reservaActualizada = await this.reserva.update({
+      where: { id },
+      data: {
+        estadoEntrega: entregaData.estadoEntrega,
+        costoEntrega: entregaData.costoEntrega,
+        pagoEntrega: entregaData.pagoEntrega || false,
+        observacionesEntrega: entregaData.observacionesEntrega,
+        usuarioEntrega: user.nombre,
+        fechaEntrega: entregaData.estadoEntrega === 'ENTREGADO' ? new Date() : null,
+      },
+      include: {
+        area: true,
+        confirmacion: true,
+        pagosReserva: true
+      }
+    });
+
+    this.logger.log(`📦 [Entrega Service] Entrega gestionada exitosamente para reserva ${id}`);
+    
+    return reservaActualizada;
+  }
 }
