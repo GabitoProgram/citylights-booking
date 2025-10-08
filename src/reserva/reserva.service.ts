@@ -313,6 +313,7 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     });
 
     // Si hay daños, crear registro de pago por daños
+    let pagoDanosId: number | null = null;
     if (entregaData.montoDanos && entregaData.montoDanos > 0 && entregaData.descripcionDanos) {
       this.logger.log(`💰 [Entrega Service] Creando pago por daños: $${entregaData.montoDanos}`);
       
@@ -325,11 +326,15 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
         }
       });
 
+      pagoDanosId = pagoDanos.id;
       this.logger.log(`💰 [Entrega Service] Pago por daños creado con ID: ${pagoDanos.id}`);
     }
 
     this.logger.log(`📦 [Entrega Service] Entrega gestionada exitosamente para reserva ${id}`);
     
-    return reservaActualizada;
+    return {
+      reserva: reservaActualizada,
+      pagoDanosId: pagoDanosId
+    };
   }
 }

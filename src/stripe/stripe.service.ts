@@ -56,6 +56,52 @@ export class StripeService {
   }
 
   /**
+   * Crear una sesión de checkout específica para pagos de daños
+   */
+  async createCheckoutSessionForDanos(
+    pagoDanosId: number,
+    reservaId: number,
+    monto: number,
+    descripcion: string,
+    customerEmail?: string
+  ): Promise<Stripe.Checkout.Session> {
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Pago por Daños`,
+                description: descripcion,
+              },
+              unit_amount: Math.round(monto * 100), // Stripe maneja centavos
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reservas?payment=success&type=danos&id=${pagoDanosId}`,
+        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reservas?payment=cancelled&type=danos&id=${pagoDanosId}`,
+        customer_email: customerEmail,
+        metadata: {
+          pagoDanosId: pagoDanosId.toString(),
+          reservaId: reservaId.toString(),
+          tipo: 'pago_danos'
+        },
+        expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // Expira en 30 minutos
+      });
+
+      this.logger.log(`✅ Checkout session para pago de daños creada: ${session.id}`);
+      return session;
+    } catch (error) {
+      this.logger.error(`❌ Error creando checkout session para daños: ${error.message}`);
+      throw new Error(`Error al crear sesión de pago de daños: ${error.message}`);
+    }
+  }
+
+  /**
    * Verificar el estado de una sesión de checkout
    */
   async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {

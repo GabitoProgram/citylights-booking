@@ -4,12 +4,16 @@ import type { CreatePagoDanosDto, UpdatePagoDanosDto } from './pago-danos.servic
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/user.decorator';
 import type { UserFromToken } from '../auth/jwt-auth.guard';
+import { StripeService } from '../stripe/stripe.service';
 
 @Controller('pago-danos')
 export class PagoDanosController {
   private readonly logger = new Logger(PagoDanosController.name);
 
-  constructor(private readonly pagoDanosService: PagoDanosService) {}
+  constructor(
+    private readonly pagoDanosService: PagoDanosService,
+    private readonly stripeService: StripeService
+  ) {}
 
   // Crear un nuevo pago por daños
   @Post()
@@ -73,6 +77,43 @@ export class PagoDanosController {
       body.stripePaymentId,
       user
     );
+  }
+
+  // Crear sesión de Stripe para pago de daños
+  @Post(':id/stripe-session')
+  @UseGuards(JwtAuthGuard)
+  async createStripeSession(
+    @Param('id') id: string,
+    @GetUser() user: UserFromToken
+  ) {
+    this.logger.log(`💳 [Controller] Creando sesión de Stripe para pago de daños: ${id}`);
+    
+    // Obtener el pago de daños
+    const pagoDanos = await this.pagoDanosService.findOne(Number(id));
+    
+    if (!pagoDanos) {
+      throw new Error('Pago de daños no encontrado');
+    }
+
+    if (pagoDanos.estadoPago !== 'PENDIENTE') {
+      throw new Error('Este pago ya ha sido procesado');
+    }
+
+    // Crear sesión de Stripe
+    const session = await this.stripeService.createCheckoutSessionForDanos(
+      pagoDanos.id,
+      pagoDanos.reservaId,
+      pagoDanos.montoDanos,
+      `Pago por daños - Reserva ${pagoDanos.reservaId}: ${pagoDanos.descripcionDanos}`,
+      user.email
+    );
+
+    // Actualizar el pago con el session ID
+    await this.pagoDanosService.update(Number(id), {
+      stripeSessionId: session.id
+    }, user);
+
+    return { url: session.url };
   }
 
   // Obtener todos los pagos pendientes

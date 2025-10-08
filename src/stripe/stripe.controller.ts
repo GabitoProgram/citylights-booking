@@ -13,6 +13,7 @@ import {
 import type { Request, Response } from 'express';
 import { StripeService } from './stripe.service';
 import { PagoReservaService } from '../pago-reserva/pago-reserva.service';
+import { PagoDanosService } from '../pago-danos/pago-danos.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/user.decorator';
 import { AuditoriaService } from '../auditoria/auditoria.service';
@@ -25,6 +26,7 @@ export class StripeController {
   constructor(
     private readonly stripeService: StripeService,
     private readonly pagoReservaService: PagoReservaService,
+    private readonly pagoDanosService: PagoDanosService,
     private readonly auditoriaService: AuditoriaService
   ) {}
 
@@ -204,7 +206,30 @@ export class StripeController {
   private async handleCheckoutSessionCompleted(session: any) {
     try {
       const reservaId = parseInt(session.metadata.reservaId);
+      const pagoDanosId = session.metadata.pagoDanosId ? parseInt(session.metadata.pagoDanosId) : null;
       
+      // Si es un pago de daños
+      if (pagoDanosId) {
+        this.logger.log(`💰 Pago de daños completado para pago ID ${pagoDanosId}`);
+        
+        // Marcar el pago de daños como pagado
+        await this.pagoDanosService.marcarComoPagado(
+          pagoDanosId,
+          session.id,
+          session.payment_intent,
+          { 
+            id: 0, 
+            nombre: 'Sistema Stripe', 
+            email: 'sistema@stripe.com', 
+            rol: 'SYSTEM' 
+          } as UserFromToken // Usuario del sistema para el webhook
+        );
+        
+        this.logger.log(`✅ Pago de daños ${pagoDanosId} marcado como PAGADO exitosamente`);
+        return;
+      }
+      
+      // Si es un pago de reserva normal (lógica existente)
       if (!reservaId) {
         throw new Error('reservaId no encontrado en metadata de la sesión');
       }
