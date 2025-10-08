@@ -16,10 +16,12 @@ import type { Request, Response } from 'express';
 import { StripeService } from './stripe.service';
 import { PagoReservaService } from '../pago-reserva/pago-reserva.service';
 import { PagoDanosService } from '../pago-danos/pago-danos.service';
+import { ReservaService } from '../reserva/reserva.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/user.decorator';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import type { UserFromToken } from '../auth/jwt-auth.guard';
+import { EstadoEntrega } from 'generated/prisma';
 
 @Controller('stripe')
 export class StripeController {
@@ -30,6 +32,8 @@ export class StripeController {
     private readonly pagoReservaService: PagoReservaService,
     @Inject(forwardRef(() => PagoDanosService))
     private readonly pagoDanosService: PagoDanosService,
+    @Inject(forwardRef(() => ReservaService))
+    private readonly reservaService: ReservaService,
     private readonly auditoriaService: AuditoriaService
   ) {}
 
@@ -228,7 +232,14 @@ export class StripeController {
           } as UserFromToken // Usuario del sistema para el webhook
         );
         
-        this.logger.log(`✅ Pago de daños ${pagoDanosId} marcado como PAGADO exitosamente`);
+        // También actualizar el estado de entrega de la reserva a ENTREGADO
+        this.logger.log(`📦 Actualizando estado de entrega para reserva ${reservaId} a ENTREGADO`);
+        await this.reservaService.update(reservaId, { 
+          id: reservaId,
+          estadoEntrega: EstadoEntrega.ENTREGADO
+        });
+        
+        this.logger.log(`✅ Pago de daños ${pagoDanosId} marcado como PAGADO y reserva ${reservaId} marcada como ENTREGADO exitosamente`);
         return;
       }
       
