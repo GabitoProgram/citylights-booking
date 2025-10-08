@@ -90,7 +90,8 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       include: {
         area: true,
         confirmacion: true,
-        pagosReserva: true
+        pagosReserva: true,
+        pagosDanos: true // ← Agregamos esto para incluir pagos de daños
       }
     });
 
@@ -108,7 +109,8 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       include: {
         area: true,
         confirmacion: true,
-        pagosReserva: true
+        pagosReserva: true,
+        pagosDanos: true // ← Agregamos esto
       }
     });
 
@@ -125,7 +127,8 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       include: {
         area: true,
         confirmacion: true,
-        pagosReserva: true
+        pagosReserva: true,
+        pagosDanos: true // ← Agregamos esto
       }
     });
   }
