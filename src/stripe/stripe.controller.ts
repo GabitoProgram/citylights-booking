@@ -353,4 +353,64 @@ export class StripeController {
       };
     }
   }
+
+  /**
+   * Verificar y actualizar el estado de un pago de daños después de Stripe
+   */
+  @Get('verify-damage-payment/:sessionId')
+  @UseGuards(JwtAuthGuard)
+  async verifyDamagePayment(
+    @Param('sessionId') sessionId: string,
+    @GetUser() user: UserFromToken
+  ) {
+    try {
+      this.logger.log(`🔍 Verificando pago de daños para sesión ${sessionId} por usuario ${user.nombre}`);
+
+      const session = await this.stripeService.retrieveCheckoutSession(sessionId);
+      
+      if (session.payment_status === 'paid' && session.metadata?.pagoDanosId) {
+        const pagoDanosId = parseInt(session.metadata.pagoDanosId);
+        const reservaId = parseInt(session.metadata.reservaId);
+        
+        this.logger.log(`💰 Sesión pagada detectada, actualizando pago de daños ${pagoDanosId}`);
+        
+        // Marcar el pago de daños como pagado
+        await this.pagoDanosService.marcarComoPagado(
+          pagoDanosId,
+          session.id,
+          session.payment_intent as string,
+          user
+        );
+        
+        // También actualizar el estado de entrega de la reserva a ENTREGADO
+        this.logger.log(`📦 Actualizando estado de entrega para reserva ${reservaId} a ENTREGADO`);
+        await this.reservaService.update(reservaId, { 
+          id: reservaId,
+          estadoEntrega: EstadoEntrega.ENTREGADO
+        });
+        
+        this.logger.log(`✅ Pago de daños ${pagoDanosId} verificado y actualizado a PAGADO, reserva ${reservaId} marcada como ENTREGADO`);
+        
+        return {
+          success: true,
+          message: 'Pago de daños verificado y actualizado exitosamente',
+          paymentStatus: 'paid',
+          deliveryStatus: 'ENTREGADO'
+        };
+      } else {
+        return {
+          success: false,
+          message: 'El pago aún no se ha completado',
+          paymentStatus: session.payment_status
+        };
+      }
+
+    } catch (error) {
+      this.logger.error(`❌ Error verificando pago de daños: ${error.message}`);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
 }
