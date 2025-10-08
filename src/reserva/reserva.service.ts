@@ -316,7 +316,7 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     if (entregaData.montoDanos && entregaData.montoDanos > 0 && entregaData.descripcionDanos) {
       this.logger.log(`💰 [Entrega Service] Creando pago por daños: $${entregaData.montoDanos}`);
       
-      await this.pagoDanos.create({
+      const pagoDanos = await this.pagoDanos.create({
         data: {
           reservaId: id,
           montoDanos: entregaData.montoDanos,
@@ -324,6 +324,8 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
           usuarioRegistra: user.nombre,
         }
       });
+
+      this.logger.log(`💰 [Entrega Service] Pago por daños creado con ID: ${pagoDanos.id}`);
     }
 
     this.logger.log(`📦 [Entrega Service] Entrega gestionada exitosamente para reserva ${id}`);
