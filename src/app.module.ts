@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { TestModule } from './test/test.module';
 import { StripeModule } from './stripe/stripe.module';
+import { PagoDanosModule } from './pago-danos/pago-danos.module';
 
 
 @Module({
@@ -22,7 +23,8 @@ import { StripeModule } from './stripe/stripe.module';
     PagoReservaModule,
     BloqueoModule,
     FacturaModule,
-    StripeModule
+    StripeModule,
+    PagoDanosModule
   ],
 
 })

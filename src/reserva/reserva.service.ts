@@ -259,7 +259,7 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     });
   }
 
-  // 📦 NUEVO MÉTODO: Gestionar entrega de reserva
+  // 📦 MÉTODO ACTUALIZADO: Gestionar entrega de reserva con pagos por daños
   async gestionarEntrega(
     id: number, 
     entregaData: {
@@ -267,6 +267,9 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       costoEntrega?: number;
       pagoEntrega?: boolean;
       observacionesEntrega?: string;
+      // Nuevos campos para daños
+      montoDanos?: number;
+      descripcionDanos?: string;
     },
     user: any
   ) {
@@ -275,7 +278,10 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     // Verificar que la reserva existe
     const reserva = await this.reserva.findUnique({
       where: { id },
-      include: { area: true }
+      include: { 
+        area: true,
+        pagosDanos: true // Incluir pagos de daños existentes
+      }
     });
 
     if (!reserva) {
@@ -301,9 +307,24 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       include: {
         area: true,
         confirmacion: true,
-        pagosReserva: true
+        pagosReserva: true,
+        pagosDanos: true
       }
     });
+
+    // Si hay daños, crear registro de pago por daños
+    if (entregaData.montoDanos && entregaData.montoDanos > 0 && entregaData.descripcionDanos) {
+      this.logger.log(`💰 [Entrega Service] Creando pago por daños: $${entregaData.montoDanos}`);
+      
+      await this.pagoDanos.create({
+        data: {
+          reservaId: id,
+          montoDanos: entregaData.montoDanos,
+          descripcionDanos: entregaData.descripcionDanos,
+          usuarioRegistra: user.nombre,
+        }
+      });
+    }
 
     this.logger.log(`📦 [Entrega Service] Entrega gestionada exitosamente para reserva ${id}`);
     

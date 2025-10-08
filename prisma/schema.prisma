@@ -51,6 +51,12 @@ enum EstadoEntrega {
   NO_APLICA
 }
 
+enum EstadoPagoDanos {
+  PENDIENTE
+  PAGADO
+  CANCELADO
+}
+
 enum TipoTarjeta {
   VISA
   MASTERCARD
@@ -101,6 +107,30 @@ model Reserva {
   area          AreaComun   @relation(fields: [areaId], references: [id])
   confirmacion  Confirmacion?
   pagosReserva  PagoReserva[]
+  pagosDanos    PagoDanos[]   // Nueva relación con pagos de daños
+}
+
+// 💰 Nueva tabla para gestionar pagos por daños en entregas
+model PagoDanos {
+  id                Int               @id @default(autoincrement())
+  reservaId         Int               // FK a la reserva
+  montoDanos        Float             // Monto a pagar por daños
+  descripcionDanos  String            // Descripción de los daños
+  estadoPago        EstadoPagoDanos   @default(PENDIENTE)
+  
+  // Información de pago con Stripe
+  stripeSessionId   String?           // ID de sesión de Stripe
+  stripePaymentId   String?           // ID del pago en Stripe
+  fechaPago         DateTime?         // Cuándo se realizó el pago
+  
+  // Auditoría
+  usuarioRegistra   String            // Usuario que registró el daño
+  fechaRegistro     DateTime          @default(now())
+  usuarioActualiza  String?           // Usuario que actualizó el estado
+  fechaActualiza    DateTime          @updatedAt
+  
+  // Relaciones
+  reserva           Reserva           @relation(fields: [reservaId], references: [id])
 }
 
 model Bloqueo {
