@@ -296,16 +296,25 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       throw new Error('No tienes permisos para gestionar entregas');
     }
 
+    // Determinar el estado de entrega correcto
+    // Si hay daños (monto > 0), queda PENDIENTE hasta que se pague
+    // Si no hay daños (monto = 0), cambia a ENTREGADO inmediatamente
+    const estadoEntregaFinal = (entregaData.montoDanos && entregaData.montoDanos > 0) 
+      ? 'PENDIENTE' 
+      : 'ENTREGADO';
+
+    this.logger.log(`📦 [Entrega Service] Estado de entrega determinado: ${estadoEntregaFinal} (Monto daños: ${entregaData.montoDanos || 0})`);
+
     // Actualizar la reserva con datos de entrega
     const reservaActualizada = await this.reserva.update({
       where: { id },
       data: {
-        estadoEntrega: entregaData.estadoEntrega,
+        estadoEntrega: estadoEntregaFinal as any,
         costoEntrega: entregaData.costoEntrega,
         pagoEntrega: entregaData.pagoEntrega || false,
         observacionesEntrega: entregaData.observacionesEntrega,
         usuarioEntrega: user.nombre,
-        fechaEntrega: entregaData.estadoEntrega === 'ENTREGADO' ? new Date() : null,
+        fechaEntrega: estadoEntregaFinal === 'ENTREGADO' ? new Date() : null,
       },
       include: {
         area: true,
@@ -315,10 +324,14 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       }
     });
 
-    // Si hay daños, crear registro de pago por daños
+    // SIEMPRE crear registro de pago por daños (monto 0 = sin daños, monto > 0 = con daños)
     let pagoDanosId: number | null = null;
-    if (entregaData.montoDanos && entregaData.montoDanos > 0 && entregaData.descripcionDanos) {
-      this.logger.log(`💰 [Entrega Service] Creando pago por daños: $${entregaData.montoDanos}`);
+    if (entregaData.montoDanos !== undefined && entregaData.descripcionDanos) {
+      this.logger.log(`💰 [Entrega Service] Creando registro de pago por daños: $${entregaData.montoDanos}`);
+      
+      // Determinar estado y fecha según el monto
+      const estadoPago = entregaData.montoDanos === 0 ? 'PAGADO' : 'PENDIENTE';
+      const fechaPago = entregaData.montoDanos === 0 ? new Date() : null;
       
       const pagoDanos = await this.pagoDanos.create({
         data: {
@@ -326,11 +339,13 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
           montoDanos: entregaData.montoDanos,
           descripcionDanos: entregaData.descripcionDanos,
           usuarioRegistra: user.nombre,
+          estadoPago: estadoPago as any,
+          fechaPago: fechaPago,
         }
       });
 
       pagoDanosId = pagoDanos.id;
-      this.logger.log(`💰 [Entrega Service] Pago por daños creado con ID: ${pagoDanos.id}`);
+      this.logger.log(`💰 [Entrega Service] Registro de pago por daños creado con ID: ${pagoDanos.id}, Estado: ${estadoPago}`);
     }
 
     this.logger.log(`📦 [Entrega Service] Entrega gestionada exitosamente para reserva ${id}`);
