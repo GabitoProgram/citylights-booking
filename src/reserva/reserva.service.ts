@@ -224,13 +224,19 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
       });
       console.log(`🗑️ [ReservaService] Eliminados ${deletedPagos.count} pagos`);
       
-      // 3. Eliminar confirmación
+      // 3. Eliminar pagos de daños
+      const deletedPagosDanos = await tx.pagoDanos.deleteMany({
+        where: { reservaId: id }
+      });
+      console.log(`🗑️ [ReservaService] Eliminados ${deletedPagosDanos.count} pagos de daños`);
+      
+      // 4. Eliminar confirmación
       const deletedConfirmacion = await tx.confirmacion.deleteMany({
         where: { reservaId: id }
       });
       console.log(`🗑️ [ReservaService] Eliminadas ${deletedConfirmacion.count} confirmaciones`);
       
-      // 4. Finalmente, eliminar la reserva
+      // 5. Finalmente, eliminar la reserva
       const deletedReserva = await tx.reserva.delete({
         where: { id }
       });
