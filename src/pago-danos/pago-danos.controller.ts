@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PagoDanosService } from './pago-danos.service';
 import type { CreatePagoDanosDto, UpdatePagoDanosDto } from './pago-danos.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,6 +12,7 @@ export class PagoDanosController {
 
   constructor(
     private readonly pagoDanosService: PagoDanosService,
+    @Inject(forwardRef(() => StripeService))
     private readonly stripeService: StripeService
   ) {}
 

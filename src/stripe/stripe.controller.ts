@@ -8,7 +8,9 @@ import {
   UseGuards,
   Logger,
   Get,
-  Param
+  Param,
+  Inject,
+  forwardRef
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { StripeService } from './stripe.service';
@@ -26,6 +28,7 @@ export class StripeController {
   constructor(
     private readonly stripeService: StripeService,
     private readonly pagoReservaService: PagoReservaService,
+    @Inject(forwardRef(() => PagoDanosService))
     private readonly pagoDanosService: PagoDanosService,
     private readonly auditoriaService: AuditoriaService
   ) {}
