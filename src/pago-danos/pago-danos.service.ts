@@ -27,12 +27,20 @@ export class PagoDanosService extends PrismaClient implements OnModuleInit {
   async create(createDto: CreatePagoDanosDto, user: UserFromToken) {
     this.logger.log(`💰 [PagoDanos] Creando pago por daños para reserva ${createDto.reservaId} por ${user.nombre}`);
     
-    return this.pagoDanos.create({
+    // Si el monto es 0 (sin daños), marcarlo como PAGADO automáticamente
+    const estadoPago = createDto.montoDanos === 0 ? 'PAGADO' : 'PENDIENTE';
+    const fechaPago = createDto.montoDanos === 0 ? new Date() : null;
+    
+    this.logger.log(`💰 [PagoDanos] Monto: ${createDto.montoDanos}, Estado: ${estadoPago}`);
+    
+    const pagoDanos = await this.pagoDanos.create({
       data: {
         reservaId: createDto.reservaId,
         montoDanos: createDto.montoDanos,
         descripcionDanos: createDto.descripcionDanos,
         usuarioRegistra: user.nombre,
+        estadoPago: estadoPago as any,
+        fechaPago: fechaPago,
       },
       include: {
         reserva: {
@@ -42,6 +50,18 @@ export class PagoDanosService extends PrismaClient implements OnModuleInit {
         }
       }
     });
+
+    // Si no hay daños (monto = 0), también actualizar el estado de entrega a ENTREGADO
+    if (createDto.montoDanos === 0) {
+      this.logger.log(`📦 [PagoDanos] Sin daños detectado, actualizando estado de entrega a ENTREGADO para reserva ${createDto.reservaId}`);
+      
+      await this.reserva.update({
+        where: { id: createDto.reservaId },
+        data: { estadoEntrega: 'ENTREGADO' as any }
+      });
+    }
+
+    return pagoDanos;
   }
 
   // Obtener pagos de daños por reserva
