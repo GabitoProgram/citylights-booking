@@ -5,9 +5,10 @@ import { AuthModule } from '../auth/auth.module';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { StripeModule } from '../stripe/stripe.module';
 import { PagoReservaModule } from '../pago-reserva/pago-reserva.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [AuthModule, AuditoriaModule, forwardRef(() => StripeModule), PagoReservaModule],
+  imports: [AuthModule, AuditoriaModule, forwardRef(() => StripeModule), PagoReservaModule, EmailModule],
   controllers: [ReservaController],
   providers: [ReservaService],
   exports: [ReservaService]

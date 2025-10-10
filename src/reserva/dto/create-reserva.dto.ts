@@ -32,4 +32,8 @@ export class CreateReservaDto {
     @IsString()
     usuarioRol?: string;
 
+    @IsOptional()
+    @IsString()
+    usuarioEmail?: string;
+
 }

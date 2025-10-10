@@ -2,11 +2,16 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { CreateReservaDto } from './dto/create-reserva.dto';
 import { UpdateReservaDto } from './dto/update-reserva.dto';
 import { PrismaClient, PagoStatus, MetodoPago, EstadoReserva } from 'generated/prisma';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ReservaService extends PrismaClient implements OnModuleInit {
 
   private readonly logger = new Logger(ReservaService.name);
+
+  constructor(private readonly emailService: EmailService) {
+    super();
+  }
 
   async onModuleInit() {
     await this.$connect();
@@ -62,6 +67,25 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     });
 
     this.logger.log(`Reserva ${reserva.id} creada con confirmación ${confirmacion.id} y pago ${pago.id}`);
+
+    // Enviar email de confirmación de reserva
+    try {
+      await this.emailService.enviarConfirmacionReserva({
+        emailDestino: createReservaDto.usuarioEmail || 'cliente@ejemplo.com', // Usar email del dto o default
+        nombreUsuario: createReservaDto.usuarioNombre || 'Cliente',
+        numeroReserva: reserva.id.toString(),
+        nombreArea: `Área ${reserva.areaId}`,
+        fechaReserva: reserva.inicio.toLocaleDateString('es-ES'),
+        horaInicio: reserva.inicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        horaFin: reserva.fin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        precio: reserva.costo
+      });
+      
+      this.logger.log(`📧 Email de confirmación enviado para reserva ${reserva.id}`);
+    } catch (error) {
+      this.logger.error(`❌ Error enviando email para reserva ${reserva.id}:`, error);
+      // No fallar la creación de reserva por error de email
+    }
 
     return {
       reserva,
