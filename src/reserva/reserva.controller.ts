@@ -59,6 +59,7 @@ export class ReservaController {
       usuarioId: user.id.toString(),
       usuarioNombre: user.nombre,
       usuarioRol: user.rol,
+      usuarioEmail: createReservaDto.usuarioEmail || user.email, // Usar email del DTO o del usuario
       costo: costo
     };
 
@@ -261,6 +262,7 @@ export class ReservaController {
         usuarioId: user.id.toString(),
         usuarioNombre: user.nombre,
         usuarioRol: user.rol,
+        usuarioEmail: createReservaDto.usuarioEmail || user.email, // Usar email del DTO o del usuario
         costo: costo
       };
 
