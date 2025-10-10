@@ -210,11 +210,56 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     };
   }
 
-  update(id: number, updateReservaDto: UpdateReservaDto) {
-    return this.reserva.update({
+  async update(id: number, updateReservaDto: UpdateReservaDto) {
+    // Obtener la reserva actual para comparar estados
+    const reservaActual = await this.reserva.findUnique({
       where: { id },
-      data: updateReservaDto
+      include: {
+        area: true
+      }
     });
+
+    if (!reservaActual) {
+      throw new Error(`Reserva con ID ${id} no encontrada`);
+    }
+
+    // Actualizar la reserva
+    const reservaActualizada = await this.reserva.update({
+      where: { id },
+      data: updateReservaDto,
+      include: {
+        area: true
+      }
+    });
+
+    // 📧 ENVIAR EMAIL CUANDO SE CONFIRMA LA RESERVA
+    if (
+      updateReservaDto.estado === EstadoReserva.CONFIRMED && 
+      reservaActual.estado !== EstadoReserva.CONFIRMED &&
+      reservaActualizada.usuarioEmail
+    ) {
+      try {
+        this.logger.log(`📧 Reserva ${id} confirmada, enviando email de confirmación...`);
+        
+        await this.emailService.enviarConfirmacionReserva({
+          emailDestino: reservaActualizada.usuarioEmail,
+          nombreUsuario: reservaActualizada.usuarioNombre || 'Cliente',
+          numeroReserva: reservaActualizada.id.toString(),
+          nombreArea: reservaActualizada.area?.nombre || `Área ${reservaActualizada.areaId}`,
+          fechaReserva: reservaActualizada.inicio.toLocaleDateString('es-ES'),
+          horaInicio: reservaActualizada.inicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          horaFin: reservaActualizada.fin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          precio: reservaActualizada.costo
+        });
+        
+        this.logger.log(`✅ Email de confirmación enviado para reserva ${id} a ${reservaActualizada.usuarioEmail}`);
+      } catch (error) {
+        this.logger.error(`❌ Error enviando email de confirmación para reserva ${id}:`, error);
+        // No fallar la actualización por error de email
+      }
+    }
+
+    return reservaActualizada;
   }
 
   remove(id: number) {
