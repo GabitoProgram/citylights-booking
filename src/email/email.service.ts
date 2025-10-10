@@ -127,7 +127,10 @@ export class EmailService {
 
       const msg = {
         to: datos.emailDestino,
-        from: 'citylights@noreply.com', // Email verificado en SendGrid
+        from: {
+          email: process.env.EMAIL_FROM || 'gcallisayad@fcpn.edu.bo',
+          name: process.env.EMAIL_FROM_NAME || 'AreaComún Services'
+        },
         subject: `✅ Reserva Confirmada - ${datos.nombreArea} | CitiLights`,
         html: htmlContent,
         text: `
@@ -148,6 +151,10 @@ export class EmailService {
         `
       };
 
+      this.logger.log(`📧 Preparando email para: ${datos.emailDestino}`);
+      this.logger.log(`📧 Desde: ${typeof msg.from === 'object' ? msg.from.email : msg.from}`);
+      this.logger.log(`📋 Asunto: ${msg.subject}`);
+      
       await sgMail.send(msg);
       this.logger.log(`✅ Email de confirmación enviado exitosamente a ${datos.emailDestino}`);
       
