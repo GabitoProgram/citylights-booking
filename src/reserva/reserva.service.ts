@@ -235,14 +235,19 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
     // 📧 ENVIAR EMAIL CUANDO SE CONFIRMA LA RESERVA
     if (
       updateReservaDto.estado === EstadoReserva.CONFIRMED && 
-      reservaActual.estado !== EstadoReserva.CONFIRMED &&
-      reservaActualizada.usuarioEmail
+      reservaActual.estado !== EstadoReserva.CONFIRMED
     ) {
       try {
         this.logger.log(`📧 Reserva ${id} confirmada, enviando email de confirmación...`);
         
+        // Obtener email del usuario desde la tabla de usuarios (login service)
+        // Por ahora usamos el usuarioNombre como fallback hasta integrar con login service
+        const emailDestino = reservaActualizada.usuarioNombre?.includes('@') 
+          ? reservaActualizada.usuarioNombre 
+          : 'gcallisayad@fcpn.edu.bo'; // Fallback a tu email
+        
         await this.emailService.enviarConfirmacionReserva({
-          emailDestino: reservaActualizada.usuarioEmail,
+          emailDestino: emailDestino,
           nombreUsuario: reservaActualizada.usuarioNombre || 'Cliente',
           numeroReserva: reservaActualizada.id.toString(),
           nombreArea: reservaActualizada.area?.nombre || `Área ${reservaActualizada.areaId}`,
@@ -252,7 +257,7 @@ export class ReservaService extends PrismaClient implements OnModuleInit {
           precio: reservaActualizada.costo
         });
         
-        this.logger.log(`✅ Email de confirmación enviado para reserva ${id} a ${reservaActualizada.usuarioEmail}`);
+        this.logger.log(`✅ Email de confirmación enviado para reserva ${id} a ${emailDestino}`);
       } catch (error) {
         this.logger.error(`❌ Error enviando email de confirmación para reserva ${id}:`, error);
         // No fallar la actualización por error de email
