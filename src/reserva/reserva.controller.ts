@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Patch, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
+import { Query } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ReservaService } from './reserva.service';
 import { CreateReservaDto } from './dto/create-reserva.dto';
@@ -191,12 +192,12 @@ export class ReservaController {
   // 🚀 ENDPOINT PARA REPORTES DE INGRESOS
   @Get('reportes/ingresos')
   async getReporteIngresos(
-    @Param('fechaInicio') fechaInicio?: string,
-    @Param('fechaFin') fechaFin?: string
+    @Query('fechaInicio') fechaInicio?: string,
+    @Query('fechaFin') fechaFin?: string
   ) {
     try {
       // Obtener todas las reservas con pagos
-      const reservas = await this.reservaService.findAllForReports(fechaInicio, fechaFin);
+  const reservas = await this.reservaService.findAllForReports(fechaInicio, fechaFin);
       
       // Procesar reservas para crear reporte de ingresos por área
       const ingresosPorArea = new Map();
@@ -223,7 +224,10 @@ export class ReservaController {
         }
       }
       
-      return Array.from(ingresosPorArea.values());
+      return {
+        success: true,
+        data: Array.from(ingresosPorArea.values())
+      };
     } catch (error) {
       this.logger.error('Error generando reporte de ingresos:', error);
       return [];
